@@ -1,0 +1,36 @@
+name: CICD
+
+on:
+  push:
+    branches: [deploy-to-ec2]
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '21'
+      - name: Build with Gradle
+        run: ./gradlew clean build
+      - name: Login to docker hub
+        run: docker login -u ${{secrets.DOCKER_USERNAME}} -p ${{secrets.DOCKER_PASSWORD}}
+      - name: Build docker image
+        run: docker build -t mehedih123/springboot-demo .
+      - name: Push image to docker hub
+        run: docker push mehedih123/springboot-demo:latest
+
+  deploy:
+    needs: build
+    runs-on: [aws-ec2]
+    steps:
+      - name: Pull image from docker hub
+        run: docker pull mehedih123/springboot-demo:latest
+      - name: Delete old container
+        run: docker rm -f springboot-demo-container
+      - name: Run docker container
+        run: docker run -d -p 8080:8080 --name springboot-demo-container mehedih123/springboot-demo
