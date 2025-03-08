@@ -30,6 +30,8 @@ jobs:
     needs: build
     runs-on: [aws-ec2-2]
     steps:
+      - name: Check docker version
+        run: docker --version
       - name: Pull image from docker hub
         run: docker pull mehedih123/springboot-demo:latest
       - name: Delete old container
